@@ -378,6 +378,3 @@ The ODI Progressive Cricket Score Predictor represents a significant advancement
 
 ---
 
-*Last updated: October 11, 2025*  
-*Version: 1.0.0*  
-*Status: Production Ready*
