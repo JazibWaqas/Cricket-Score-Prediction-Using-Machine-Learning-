@@ -1,0 +1,30 @@
+================================================================================
+FEATURE IMPORTANCE ANALYSIS
+================================================================================
+
+TOP 15 FEATURES BY IMPORTANCE:
+--------------------------------------------------------------------------------
+ 1. current_run_rate                           2.70%
+ 2. venue_avg_score                            2.29%
+ 3. venue_Al Amerat Cricket Ground Oman Cricket (Ministry Turf 1)   2.23%
+ 4. venue_Stanley Park, Blackpool              1.47%
+ 5. team_batting_depth                         1.42%
+ 6. venue_County Ground, Chelmsford            1.38%
+ 7. wickets_fallen                             1.38%
+ 8. venue_Welbeck Abbey Cricket Ground         1.29%
+ 9. venue_County Ground, New Road, Worcester   1.06%
+10. venue_The Padang                           1.02%
+11. venue_Old Trafford, Manchester             1.01%
+12. venue_Guyana National Stadium, Providence   0.99%
+13. venue_Western Australia Cricket Association Ground, Perth   0.98%
+14. venue_Lugogo Cricket Oval, Kampala         0.87%
+15. venue_Civil Service Cricket Club, Stormont, Belfast   0.86%
+
+================================================================================
+BY CATEGORY:
+================================================================================
+Match State Features:        5.52%
+Batting Team Features:      2.44%
+Opposition Features:        2.05%
+Venue Features:            89.26%
+Current Batsmen Features:   0.72%

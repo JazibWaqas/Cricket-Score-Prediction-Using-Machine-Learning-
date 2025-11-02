@@ -153,19 +153,27 @@ npm start
 | **Death** | 240+ | 0.94 | 94% | 12 runs |
 
 ### **Validation Results:**
+
+**Comprehensive Validation (Primary):**
+- **Test Cases:** 2,904 predictions from 592 international ODI matches
+- **Overall R²:** 0.692 (69.2%)
+- **MAE:** 24.93 runs
+- **Accuracy (±30 runs):** 70.1%
+- **Progressive Improvement:** ✅ Working as designed
+
+**Dashboard/API Testing:**
 - **Test Cases:** 20 real ODI matches
 - **Success Rate:** 100%
 - **Best Prediction:** 6 runs error (98% accuracy)
-- **Average Error:** 51.3 runs
-- **Progressive Improvement:** ✅ Working as designed
+- **Average Error:** 51.3 runs (smaller sample, higher variance)
 
 ---
 
 ## 🔧 **TECHNICAL ARCHITECTURE**
 
 ### **Machine Learning Pipeline:**
-1. **Data Processing:** 5,761 ODI matches → 68,470 samples
-2. **Feature Engineering:** 15 comprehensive features
+1. **Data Processing:** 5,761 ODI matches → 12,254 samples (2,553 matches processed)
+2. **Feature Engineering:** 15 numeric + 1 categorical (venue) = 16 total features
 3. **Model Training:** XGBoost with temporal validation
 4. **Progressive Prediction:** Accuracy improves with match progression
 
@@ -234,16 +242,28 @@ npm start
 
 ### **Model Specifications:**
 - **Algorithm:** XGBoost Regressor
-- **Parameters:** n_estimators=400, max_depth=7
-- **Training Data:** 68,470 samples (4,823 matches)
-- **Test Data:** 13,730 samples (unseen matches)
+- **Parameters:** n_estimators=400, max_depth=7, learning_rate=0.1
+- **Training Data:** 11,032 samples (2,297 matches)
+- **Test Data:** 1,222 samples (256 matches)
+- **Comprehensive Validation:** 2,904 predictions from 592 international ODI matches
 - **Validation:** Temporal split (train <2023, test 2023-2025)
+- **Overall R²:** 0.692 (69.2%)
+- **MAE:** 24.93 runs on international ODI matches
 
 ---
 
 ## 🧪 **VALIDATION & TESTING**
 
 ### **Real Match Validation:**
+
+**Comprehensive Validation:**
+- **Test Dataset:** 2,904 predictions from 592 international ODI matches
+- **Overall R²:** 0.692 (69.2%)
+- **MAE:** 24.93 runs
+- **Accuracy (±30 runs):** 70.1%
+- **Progressive Accuracy:** R² 0.35 → 0.94 (pre-match to death overs)
+
+**Dashboard/API Testing:**
 - **Test Dataset:** 20 real ODI matches
 - **Match Stages:** Pre-match to death overs
 - **Countries:** India, Pakistan, Australia, England, etc.
