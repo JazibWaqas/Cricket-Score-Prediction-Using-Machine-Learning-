@@ -44,14 +44,17 @@ const MatchScenario = ({ scenario, onChange, venues, battingPlayers }) => {
         {/* Current Score */}
         <div>
           <label className="block text-dark-muted mb-2">Current Score</label>
-          <input
-            type="number"
-            value={scenario.current_score}
-            onChange={(e) => handleChange('current_score', parseInt(e.target.value) || 0)}
-            className="cricket-input w-full"
-            min="0"
-            max="500"
-          />
+            <input
+              type="number"
+              value={scenario.current_score}
+              onChange={(e) => {
+                const v = e.target.value;
+                handleChange('current_score', v === '' ? '' : parseInt(v, 10));
+              }}
+              className="cricket-input w-full"
+              min="0"
+              max="500"
+            />
         </div>
         
         {/* Wickets */}
@@ -60,7 +63,10 @@ const MatchScenario = ({ scenario, onChange, venues, battingPlayers }) => {
           <input
             type="number"
             value={scenario.wickets_fallen}
-            onChange={(e) => handleChange('wickets_fallen', parseInt(e.target.value) || 0)}
+            onChange={(e) => {
+              const v = e.target.value;
+              handleChange('wickets_fallen', v === '' ? '' : parseInt(v, 10));
+            }}
             className="cricket-input w-full"
             min="0"
             max="10"
@@ -73,7 +79,10 @@ const MatchScenario = ({ scenario, onChange, venues, battingPlayers }) => {
           <input
             type="number"
             value={scenario.overs}
-            onChange={(e) => handleChange('overs', parseInt(e.target.value) || 0)}
+            onChange={(e) => {
+              const v = e.target.value;
+              handleChange('overs', v === '' ? '' : parseInt(v, 10));
+            }}
             className="cricket-input w-full"
             min="0"
             max="50"
@@ -87,7 +96,10 @@ const MatchScenario = ({ scenario, onChange, venues, battingPlayers }) => {
           <input
             type="number"
             value={scenario.runs_last_10}
-            onChange={(e) => handleChange('runs_last_10', parseInt(e.target.value) || 0)}
+            onChange={(e) => {
+              const v = e.target.value;
+              handleChange('runs_last_10', v === '' ? '' : parseInt(v, 10));
+            }}
             className="cricket-input w-full"
             min="0"
             max="200"
@@ -129,72 +141,7 @@ const MatchScenario = ({ scenario, onChange, venues, battingPlayers }) => {
         </div>
       </div>
       
-      {/* Quick Scenarios */}
-      <div className="mt-6 pt-6 border-t border-dark-border">
-        <p className="text-dark-muted mb-3">Quick Scenarios:</p>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => onChange({
-              ...scenario,
-              current_score: 0,
-              wickets_fallen: 0,
-              overs: 0,
-              runs_last_10: 0
-            })}
-            className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-cricket-green transition-colors text-sm"
-          >
-            Pre-Match
-          </button>
-          <button
-            onClick={() => onChange({
-              ...scenario,
-              current_score: 55,
-              wickets_fallen: 1,
-              overs: 10,
-              runs_last_10: 55
-            })}
-            className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-cricket-green transition-colors text-sm"
-          >
-            After 10 Overs
-          </button>
-          <button
-            onClick={() => onChange({
-              ...scenario,
-              current_score: 115,
-              wickets_fallen: 2,
-              overs: 20,
-              runs_last_10: 60
-            })}
-            className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-cricket-green transition-colors text-sm"
-          >
-            After 20 Overs
-          </button>
-          <button
-            onClick={() => onChange({
-              ...scenario,
-              current_score: 180,
-              wickets_fallen: 3,
-              overs: 30,
-              runs_last_10: 65
-            })}
-            className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-cricket-green transition-colors text-sm"
-          >
-            After 30 Overs
-          </button>
-          <button
-            onClick={() => onChange({
-              ...scenario,
-              current_score: 250,
-              wickets_fallen: 5,
-              overs: 40,
-              runs_last_10: 70
-            })}
-            className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-cricket-green transition-colors text-sm"
-          >
-            After 40 Overs
-          </button>
-        </div>
-      </div>
+      {/* Quick Scenarios removed per request */}
     </motion.div>
   );
 };

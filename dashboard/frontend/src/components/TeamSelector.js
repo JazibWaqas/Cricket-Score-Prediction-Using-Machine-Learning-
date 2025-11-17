@@ -7,6 +7,7 @@ const TeamSelector = ({
   team, 
   teams, 
   players, 
+  whatIfAllPlayers = false,
   onTeamSelect, 
   onPlayerSelect, 
   onRemovePlayer 
@@ -36,7 +37,14 @@ const TeamSelector = ({
     
     // Not already selected
     const notSelected = !team.players.some(p => p.id === player.player_id);
-    
+
+    // If a team/country is selected and we're NOT in a what-if-all-players mode,
+    // only include players whose `country` matches the selected team name.
+    if (team.team_name && !whatIfAllPlayers) {
+      const matchesCountry = country === (team.team_name || '').toLowerCase();
+      return (name.includes(query) || country.includes(query)) && notSelected && matchesCountry;
+    }
+
     return (name.includes(query) || country.includes(query)) && notSelected;
   });
 

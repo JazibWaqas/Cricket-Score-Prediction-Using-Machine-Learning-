@@ -33,13 +33,15 @@ function App() {
   const [matchScenario, setMatchScenario] = useState({
     venue: '',
     venue_avg_score: 250,
-    current_score: 0,
-    wickets_fallen: 0,
-    overs: 0,
-    runs_last_10: 0,
+    current_score: '',
+    wickets_fallen: '',
+    overs: '',
+    runs_last_10: '',
     batsman_1: '',
     batsman_2: ''
   });
+  // Show players from any country when true (What-if scenario)
+  const [whatIfAllPlayers, setWhatIfAllPlayers] = useState(false);
   
   // Load initial data
   useEffect(() => {
@@ -123,17 +125,21 @@ function App() {
     setError(null);
     
     try {
-      const balls_bowled = matchScenario.overs * 6;
-      
+      const current_score = Number(matchScenario.current_score) || 0;
+      const wickets_fallen = Number(matchScenario.wickets_fallen) || 0;
+      const oversNumber = Number(matchScenario.overs) || 0;
+      const runs_last_10 = Number(matchScenario.runs_last_10) || 0;
+      const balls_bowled = oversNumber * 6;
+
       const requestData = {
         batting_team_players: teamA.players.map(p => p.name),
         bowling_team_players: teamB.players.map(p => p.name),
         venue: matchScenario.venue,
         venue_avg_score: matchScenario.venue_avg_score,
-        current_score: matchScenario.current_score,
-        wickets_fallen: matchScenario.wickets_fallen,
+        current_score: current_score,
+        wickets_fallen: wickets_fallen,
         balls_bowled: balls_bowled,
-        runs_last_10_overs: matchScenario.runs_last_10,
+        runs_last_10_overs: runs_last_10,
         batsman_1: matchScenario.batsman_1,
         batsman_2: matchScenario.batsman_2
       };
@@ -180,6 +186,18 @@ function App() {
           </motion.div>
         )}
         
+        <div className="mb-4">
+          <label className="inline-flex items-center gap-3 text-sm text-dark-muted">
+            <input
+              type="checkbox"
+              checked={whatIfAllPlayers}
+              onChange={(e) => setWhatIfAllPlayers(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span>What-if scenario: show players from all countries</span>
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Team A - Batting Team */}
           <TeamSelector
@@ -187,6 +205,7 @@ function App() {
             team={teamA}
             teams={teams}
             players={players}
+            whatIfAllPlayers={whatIfAllPlayers}
             onTeamSelect={handleTeamSelect}
             onPlayerSelect={handlePlayerSelect}
             onRemovePlayer={handleRemovePlayer}
@@ -198,6 +217,7 @@ function App() {
             team={teamB}
             teams={teams}
             players={players}
+            whatIfAllPlayers={whatIfAllPlayers}
             onTeamSelect={handleTeamSelect}
             onPlayerSelect={handlePlayerSelect}
             onRemovePlayer={handleRemovePlayer}
