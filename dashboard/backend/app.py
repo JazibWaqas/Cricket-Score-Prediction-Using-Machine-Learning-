@@ -22,6 +22,24 @@ CORS(app, origins=Config.CORS_ORIGINS)
 model_loader = get_model_loader()
 db = get_database()
 
+
+def resolve_model_identifier(identifier):
+    """Map a canonical identifier (e.g. 'xgboost' or 'random_forest') to the
+    model key used by the ModelLoader (e.g. 'XGBoost' or 'RandomForest').
+    If no mapping found, return the identifier as-is.
+    """
+    if not identifier:
+        return identifier
+    import re
+    # normalize incoming identifier to underscore style (e.g. 'random_forest')
+    lookup = identifier.lower().replace(' ', '_')
+    # compare against normalized model loader keys (convert CamelCase -> underscore)
+    for key in model_loader.models.keys():
+        key_normalized = re.sub(r'(?<!^)(?=[A-Z])', '_', key).lower().replace(' ', '_')
+        if key_normalized == lookup:
+            return key
+    return identifier
+
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -35,9 +53,27 @@ def health():
 @app.route('/api/models', methods=['GET'])
 def get_models():
     """Get list of available models"""
+    # Return models as {label, value} pairs where `value` is a canonical identifier
+    models_raw = list(model_loader.models.keys())
+    models = []
+    for m in models_raw:
+        # Friendly label: if camel/caps like 'RandomForest', convert to 'Random Forest'
+        label = ''.join([c if c.isupper() and i != 0 and not m[i-1].isupper() else c for i, c in enumerate(m)]).replace('_', ' ')
+        # make label nicer (insert space before capitals) more robustly
+        import re
+        label = re.sub(r'(?<!^)(?=[A-Z])', ' ', m).replace('_', ' ')
+        value = m.lower().replace(' ', '_')
+        models.append({'label': label, 'value': value})
+
+    default_value = None
+    if 'XGBoost' in model_loader.models:
+        default_value = 'xgboost'
+    elif models:
+        default_value = models[0]['value']
+
     return jsonify({
-        'models': list(model_loader.models.keys()),
-        'default': 'XGBoost' if 'XGBoost' in model_loader.models else list(model_loader.models.keys())[0] if model_loader.models else None
+        'models': models,
+        'default': default_value
     })
 
 @app.route('/api/teams', methods=['GET'])
@@ -180,10 +216,11 @@ def predict():
             return jsonify({'error': f'Team calculation error: {str(e)}'}), 500
         
         # Get model to use (default to XGBoost)
-        model_name = data.get('model', 'XGBoost')
+        model_identifier = data.get('model', 'xgboost')
+        model_name = resolve_model_identifier(model_identifier)
         model = model_loader.get_model(model_name)
         if model is None:
-            return jsonify({'error': f'Model "{model_name}" not available. Available: {list(model_loader.models.keys())}'}), 400
+            return jsonify({'error': f'Model "{model_identifier}" not available. Available: {list(model_loader.models.keys())}'}), 400
         
         # Get current batsmen averages (if provided)
         batsman_1_avg = 0
@@ -310,10 +347,11 @@ def whatif():
         }
         
         # Get model to use
-        model_name = base_data.get('model', 'XGBoost')
+        model_identifier = base_data.get('model', 'xgboost')
+        model_name = resolve_model_identifier(model_identifier)
         model = model_loader.get_model(model_name)
         if model is None:
-            return jsonify({'error': f'Model "{model_name}" not available'}), 400
+            return jsonify({'error': f'Model "{model_identifier}" not available'}), 400
         
         base_prediction = make_prediction(model, base_scenario)
         
@@ -374,10 +412,11 @@ def progressive():
         )
         
         # Get model to use
-        model_name = data.get('model', 'XGBoost')
+        model_identifier = data.get('model', 'xgboost')
+        model_name = resolve_model_identifier(model_identifier)
         model = model_loader.get_model(model_name)
         if model is None:
-            return jsonify({'error': f'Model "{model_name}" not available'}), 400
+            return jsonify({'error': f'Model "{model_identifier}" not available'}), 400
         
         predictions = []
         

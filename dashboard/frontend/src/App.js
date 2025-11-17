@@ -44,8 +44,13 @@ function App() {
   const [whatIfAllPlayers, setWhatIfAllPlayers] = useState(false);
   
   // Model selection
-  const [selectedModel, setSelectedModel] = useState('XGBoost');
-  const [availableModels, setAvailableModels] = useState(['XGBoost']);
+  // selectedModel stores the canonical identifier (value), e.g. 'xgboost' or 'random_forest'
+  const [selectedModel, setSelectedModel] = useState('xgboost');
+  // Fallback list of models as {label, value}
+  const [availableModels, setAvailableModels] = useState([
+    { label: 'XGBoost', value: 'xgboost' },
+    { label: 'Random Forest', value: 'random_forest' }
+  ]);
   
   // Load initial data
   useEffect(() => {
@@ -65,13 +70,34 @@ function App() {
         // Load models separately (non-critical, has fallback)
         try {
           const modelsRes = await api.getModels();
-          if (modelsRes.data.models) {
-            setAvailableModels(modelsRes.data.models);
-            setSelectedModel(modelsRes.data.default || modelsRes.data.models[0]);
+            if (modelsRes.data.models) {
+            // modelsRes.data.models expected format: [{label, value}, ...] or string list
+            const remoteModels = modelsRes.data.models.map(m => {
+              if (typeof m === 'string') {
+                return { label: m, value: m.toLowerCase().replace(/\s+/g, '_') };
+              }
+              return m;
+            });
+
+            // Merge remote models with client fallback so commonly expected models
+            // like Random Forest are visible even if backend doesn't list them.
+            const fallback = [
+              { label: 'XGBoost', value: 'xgboost' },
+              { label: 'Random Forest', value: 'random_forest' }
+            ];
+
+            // Build map by value to preserve remote ordering but include fallbacks
+            const map = new Map();
+            remoteModels.forEach(m => map.set(m.value, m));
+            fallback.forEach(m => { if (!map.has(m.value)) map.set(m.value, m); });
+
+            const merged = Array.from(map.values());
+            setAvailableModels(merged);
+            setSelectedModel(modelsRes.data.default || (merged[0] && merged[0].value));
           }
         } catch (modelErr) {
-          console.warn('Could not load models, using default:', modelErr);
-          // Keep default XGBoost
+          console.warn('Could not load models, using default fallback:', modelErr);
+          // Keep client-side fallback
         }
         
         setLoading(false);
@@ -207,17 +233,29 @@ function App() {
         
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           {/* Model Selector */}
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-dark-muted">Model:</label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-dark focus:outline-none focus:ring-2 focus:ring-cricket-primary"
-            >
-              {availableModels.map(model => (
-                <option key={model} value={model}>{model}</option>
+          <div className="flex items-center gap-6">
+            <div>
+              <div className="text-lg font-semibold text-cricket-green">Model</div>
+              <div className="text-xs text-dark-muted">Choose model for prediction</div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {availableModels.map(m => (
+                <button
+                  key={m.value}
+                  onClick={() => setSelectedModel(m.value)}
+                    className={
+                      `px-4 py-2 border rounded-lg text-sm transition-colors focus:outline-none ` +
+                      (selectedModel === m.value
+                        ? 'bg-cricket-green text-white border-cricket-green'
+                        : 'bg-black text-white border-gray-700 hover:border-cricket-green')
+                    }
+                  aria-pressed={selectedModel === m.value}
+                >
+                  {m.label}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           
           {/* What-if checkbox */}
