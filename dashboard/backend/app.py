@@ -63,11 +63,12 @@ def get_venues():
         # Add venue averages from our dataset
         venue_avgs = model_loader.venues if hasattr(model_loader, 'venues') and model_loader.venues else {}
         
+        global_avg = getattr(model_loader, 'global_venue_avg', 250.0)
         for venue in venues:
             if venue['venue_name'] in venue_avgs:
                 venue['avg_score'] = venue_avgs[venue['venue_name']]['avg_score']
             else:
-                venue['avg_score'] = 250.0  # Default
+                venue['avg_score'] = global_avg  # Use calculated global average, not hardcoded 250
         
         return jsonify({
             'venues': venues,

@@ -33,29 +33,46 @@ class ModelLoader:
             raise
     
     def load_venues(self):
-        """Extract unique venues from test data"""
+        """Load venue averages calculated from actual match data"""
         try:
             import pandas as pd
-            df = pd.read_csv(Config.TEST_DATA_PATH)
+            # Use full dataset to get better venue averages
+            dataset_path = os.path.join(os.path.dirname(__file__), '../../../ODI_Progressive/data/progressive_full_features_dataset.csv')
+            if os.path.exists(dataset_path):
+                df = pd.read_csv(dataset_path)
+            else:
+                # Fallback to test data
+                df = pd.read_csv(Config.TEST_DATA_PATH)
             
-            # Get unique venues with their average scores
+            # Calculate actual venue averages from final_score (real match data)
             venue_data = df.groupby('venue').agg({
-                'venue_avg_score': 'first',
-                'final_score': 'mean'
+                'final_score': ['mean', 'count']  # Calculate mean and count
             }).reset_index()
+            venue_data.columns = ['venue', 'avg_score', 'match_count']
             
-            self.venues = {
-                row['venue']: {
-                    'avg_score': float(row['venue_avg_score']),
-                    'actual_avg': float(row['final_score'])
+            # Only use venues with 10+ matches for reliability
+            venue_data = venue_data[venue_data['match_count'] >= 10]
+            
+            # Calculate global average for fallback
+            global_avg = float(df['final_score'].mean()) if len(df) > 0 else 250.0
+            
+            self.venues = {}
+            for _, row in venue_data.iterrows():
+                self.venues[row['venue']] = {
+                    'avg_score': float(row['avg_score']),  # Actual calculated average
+                    'actual_avg': float(row['avg_score']),  # Same (calculated from data)
+                    'match_count': int(row['match_count'])
                 }
-                for _, row in venue_data.iterrows()
-            }
             
-            print(f"[OK] Loaded {len(self.venues)} venues")
+            # Store global average for venues not in database
+            self.global_venue_avg = global_avg
+            
+            print(f"[OK] Loaded {len(self.venues)} venues (calculated from match data)")
+            print(f"   Global average: {global_avg:.1f} (used for venues with <10 matches)")
         except Exception as e:
             print(f"[WARNING] Could not load venues: {e}")
             self.venues = {}
+            self.global_venue_avg = 250.0
     
     def get_teams(self):
         """Get list of international teams"""

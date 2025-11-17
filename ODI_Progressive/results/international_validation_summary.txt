@@ -3,15 +3,15 @@ INTERNATIONAL ODI VALIDATION SUMMARY
 ================================================================================
 
 Test Set:
-  Matches: 592 international ODIs
-  Predictions: 2,904
+  Matches: 596 international ODIs
+  Predictions: 2,924
 
 Overall Performance:
-  R2 Score: 0.6919 (69.19%)
-  MAE: 24.93 runs
-  Mean % Error: 12.04%
+  R2 Score: 0.6134 (61.34%)
+  MAE: 29.18 runs
+  Mean % Error: 14.49%
 
 Accuracy:
-  Within +/-10 runs: 33.7%
-  Within +/-20 runs: 55.1%
-  Within +/-30 runs: 70.1%
+  Within +/-10 runs: 25.0%
+  Within +/-20 runs: 46.1%
+  Within +/-30 runs: 62.4%

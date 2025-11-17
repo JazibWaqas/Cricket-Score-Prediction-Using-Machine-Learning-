@@ -39,7 +39,7 @@ print(f"   Features: {len(feature_info['all_features'])}")
 
 print("\n[2/5] Loading player database...")
 
-player_db_path = '../../ODI/data/CURRENT_player_database_977_quality.json'
+player_db_path = '../../ODI_Progressive/CURRENT_player_database_977_quality_FIXED.json'
 with open(player_db_path, 'r') as f:
     player_database = json.load(f)
 
@@ -49,22 +49,30 @@ print(f"   Loaded {len(player_database):,} players")
 # STEP 3: HELPER FUNCTIONS (same as dataset building)
 # ==============================================================================
 
+def get_batsman_avg(player_name, player_db):
+    """Get batting average with role-based defaults"""
+    if player_name in player_db and 'batting' in player_db[player_name]:
+        batting_data = player_db[player_name]['batting']
+        avg = batting_data.get('average')
+        if avg is not None and avg > 0:
+            return float(avg)
+    
+    # Role-based defaults
+    role = player_db.get(player_name, {}).get('role', 'Batsman')
+    if 'Bowler' in role:
+        return 18.0
+    elif 'All-rounder' in role:
+        return 25.0
+    else:
+        return 30.0
+
 def calculate_batting_aggregates(players, player_db):
-    stats = []
+    """Calculate from all 11 players using role-based defaults"""
+    avgs = []
     for player in players:
-        if player in player_db and 'batting' in player_db[player]:
-            batting = player_db[player]['batting']
-            if batting.get('average'):
-                stats.append(batting)
+        avg = get_batsman_avg(player, player_db)
+        avgs.append(avg)
     
-    if len(stats) < 5:
-        return {
-            'team_batting_avg': 35.0,
-            'team_elite_batsmen': 0,
-            'team_batting_depth': 0
-        }
-    
-    avgs = [s['average'] for s in stats]
     return {
         'team_batting_avg': np.mean(avgs),
         'team_elite_batsmen': sum(1 for a in avgs if a >= 40),
@@ -72,31 +80,46 @@ def calculate_batting_aggregates(players, player_db):
     }
 
 def calculate_bowling_aggregates(players, player_db):
-    stats = []
+    """Calculate from all players using role-based defaults"""
+    economies = []
     for player in players:
         if player in player_db and 'bowling' in player_db[player]:
-            bowling = player_db[player]['bowling']
-            if bowling.get('economy'):
-                stats.append(bowling)
+            bowling_data = player_db[player]['bowling']
+            economy = bowling_data.get('economy')
+            if economy is not None and economy > 0:
+                economies.append(float(economy))
+            else:
+                # Role-based default
+                role = player_db.get(player, {}).get('role', 'Batsman')
+                if 'Bowler' in role:
+                    economies.append(5.0)
+                elif 'All-rounder' in role:
+                    economies.append(5.5)
+                else:
+                    economies.append(6.0)
+        else:
+            # Player not in database - use default
+            role = player_db.get(player, {}).get('role', 'Batsman')
+            if 'Bowler' in role:
+                economies.append(5.0)
+            elif 'All-rounder' in role:
+                economies.append(5.5)
+            else:
+                economies.append(6.0)
     
-    if len(stats) < 3:
+    if len(economies) == 0:
         return {
             'opp_bowling_economy': 5.5,
             'opp_elite_bowlers': 0,
             'opp_bowling_depth': 0
         }
     
-    econs = [s['economy'] for s in stats]
     return {
-        'opp_bowling_economy': np.mean(econs),
-        'opp_elite_bowlers': sum(1 for e in econs if e < 4.8),
-        'opp_bowling_depth': len(stats)
+        'opp_bowling_economy': np.mean(economies),
+        'opp_elite_bowlers': sum(1 for e in economies if e < 4.8),
+        'opp_bowling_depth': len(economies)
     }
 
-def get_batsman_avg(player_name, player_db):
-    if player_name in player_db and 'batting' in player_db[player_name]:
-        return player_db[player_name]['batting'].get('average', 35.0)
-    return 35.0
 
 # ==============================================================================
 # STEP 4: FIND AND PROCESS INTERNATIONAL MATCHES ONLY

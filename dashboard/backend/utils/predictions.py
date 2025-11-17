@@ -12,23 +12,16 @@ def calculate_team_aggregates(players, player_db):
         batting_avgs = []
         
         for player_name in players:
-            if player_name in player_db and 'batting' in player_db[player_name]:
-                avg = player_db[player_name]['batting'].get('average', 0)
-                if avg > 0:
-                    batting_avgs.append(avg)
+            # Use get_batsman_avg which handles defaults based on role
+            avg = get_batsman_avg(player_name, player_db)
+            batting_avgs.append(avg)  # Always add (uses actual or role-based default)
         
-        if len(batting_avgs) < 5:
-            result = {
-                'team_batting_avg': 35.0,
-                'team_elite_batsmen': 0,
-                'team_batting_depth': 0
-            }
-        else:
-            result = {
-                'team_batting_avg': np.mean(batting_avgs),
-                'team_elite_batsmen': sum(1 for avg in batting_avgs if avg >= 40),
-                'team_batting_depth': sum(1 for avg in batting_avgs if avg >= 30)
-            }
+        # Calculate from all 11 players (no more "if < 5 then default entire team")
+        result = {
+            'team_batting_avg': np.mean(batting_avgs),
+            'team_elite_batsmen': sum(1 for avg in batting_avgs if avg >= 40),
+            'team_batting_depth': sum(1 for avg in batting_avgs if avg >= 30)
+        }
         
         print(f"Batting aggregates calculated successfully: {result}")
         return result
@@ -55,12 +48,35 @@ def calculate_bowling_aggregates(players, player_db):
         bowling_economies = []
         
         for player_name in players:
+            # Try to get actual economy
             if player_name in player_db and 'bowling' in player_db[player_name]:
-                economy = player_db[player_name]['bowling'].get('economy', 0)
-                if economy > 0:
-                    bowling_economies.append(economy)
+                bowling_data = player_db[player_name]['bowling']
+                economy = bowling_data.get('economy')
+                # Check if economy exists and is valid (not None, not 0)
+                if economy is not None and economy > 0:
+                    bowling_economies.append(float(economy))
+                else:
+                    # Use role-based default if missing
+                    role = player_db.get(player_name, {}).get('role', 'Batsman')
+                    if 'Bowler' in role:
+                        bowling_economies.append(5.0)
+                    elif 'All-rounder' in role:
+                        bowling_economies.append(5.5)
+                    else:
+                        bowling_economies.append(6.0)  # Batsman who bowls occasionally
+            else:
+                # Player not in database or no bowling data - use role-based default
+                role = player_db.get(player_name, {}).get('role', 'Batsman')
+                if 'Bowler' in role:
+                    bowling_economies.append(5.0)
+                elif 'All-rounder' in role:
+                    bowling_economies.append(5.5)
+                else:
+                    bowling_economies.append(6.0)  # Batsman who bowls occasionally
         
-        if len(bowling_economies) < 3:
+        # Calculate from all players (use defaults for missing)
+        if len(bowling_economies) == 0:
+            # Fallback if no bowling data at all
             result = {
                 'opp_bowling_economy': 5.5,
                 'opp_elite_bowlers': 0,
@@ -88,10 +104,29 @@ def calculate_bowling_aggregates(players, player_db):
         }
 
 def get_batsman_avg(player_name, player_db):
-    """Get batting average for a specific player"""
+    """
+    Get batting average for a specific player
+    Uses actual average if available, otherwise role-based default:
+    - Batter: 30
+    - All-rounder: 25
+    - Bowler: 18
+    """
+    # Try to get actual average from database
     if player_name in player_db and 'batting' in player_db[player_name]:
-        return player_db[player_name]['batting'].get('average', 35.0)
-    return 35.0
+        batting_data = player_db[player_name]['batting']
+        avg = batting_data.get('average')
+        # Check if average exists and is valid (not None, not 0)
+        if avg is not None and avg > 0:  # Has actual data
+            return float(avg)
+    
+    # Only if truly missing (None, 0, or not in DB), use role-based default
+    role = player_db.get(player_name, {}).get('role', 'Batsman')
+    if 'Bowler' in role:
+        return 18.0
+    elif 'All-rounder' in role:
+        return 25.0
+    else:  # Batsman
+        return 30.0
 
 def make_prediction(model, scenario_data):
     """
@@ -169,12 +204,15 @@ def calculate_confidence_interval(mae, stage):
     return mae_value, r2_value, confidence
 
 def get_match_stage(balls_bowled):
-    """Determine match stage from balls bowled"""
-    if balls_bowled <= 10:
+    """
+    Determine match stage from balls bowled
+    Based on RESULTS.md: Pre-Match (0-60), Early (60-120), Mid (120-180), Late (180-240), Death (240+)
+    """
+    if balls_bowled <= 60:
         return 'pre-match'
-    elif balls_bowled <= 60:
-        return 'early'
     elif balls_bowled <= 120:
+        return 'early'
+    elif balls_bowled <= 180:
         return 'mid'
     elif balls_bowled <= 240:
         return 'late'

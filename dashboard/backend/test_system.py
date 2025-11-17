@@ -64,7 +64,7 @@ print("\n[5/7] Testing POST /api/predict...")
 
 # Load test data to get real match
 test_df = pd.read_csv('../../ODI_Progressive/data/progressive_full_test.csv')
-player_db = json.load(open('../../ODI/data/CURRENT_player_database_977_quality.json'))
+player_db = json.load(open('../../ODI_Progressive/CURRENT_player_database_977_quality_FIXED.json'))
 
 # Find an international match
 international_teams = ['India', 'Australia', 'England', 'Pakistan', 'South Africa']
