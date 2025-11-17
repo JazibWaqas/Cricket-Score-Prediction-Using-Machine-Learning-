@@ -1,0 +1,25 @@
+{
+  "old_model": {
+    "r2": 0.5265566110610962,
+    "mae": 37.83562469482422,
+    "accuracy_within_10": 18.45528455284553,
+    "accuracy_within_20": 35.447154471544714,
+    "accuracy_within_30": 53.00813008130081
+  },
+  "new_model": {
+    "r2": 0.5075416564941406,
+    "mae": 37.942691802978516,
+    "accuracy_within_10": 21.463414634146343,
+    "accuracy_within_20": 39.91869918699187,
+    "accuracy_within_30": 52.4390243902439
+  },
+  "difference": {
+    "r2": -0.019014954566955566,
+    "mae": 0.10706710815429688,
+    "accuracy_within_10": 3.008130081300813,
+    "accuracy_within_20": 4.471544715447155,
+    "accuracy_within_30": -0.5691056910569106
+  },
+  "verdict": "[BETTER] OLD MODEL IS BETTER",
+  "recommendation": "Keep using the OLD model (progressive_model_full_features.pkl)"
+}

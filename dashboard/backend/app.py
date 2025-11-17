@@ -45,14 +45,43 @@ def get_teams():
 
 @app.route('/api/players', methods=['GET'])
 def get_all_players():
-    """Get all players from database"""
+    """Get all players from FIXED JSON database"""
     try:
-        players = db.get_all_players()
+        # Use FIXED JSON database instead of SQLite for consistency
+        players = []
+        for player_name, player_data in model_loader.player_db.items():
+            if player_data is None:
+                continue
+            
+            batting = player_data.get('batting') or {}
+            bowling = player_data.get('bowling') or {}
+            
+            players.append({
+                'player_id': player_name,  # Use name as ID
+                'player_name': player_data.get('name', player_name),
+                'player_role': player_data.get('role', 'All-rounder'),
+                'country': player_data.get('country', 'Unknown'),
+                'batting_avg': batting.get('average', 0) if batting else 0,
+                'bowling_economy': bowling.get('economy', 0) if bowling else 0,
+                'total_matches': player_data.get('total_matches', 0),
+                'star_rating': player_data.get('star_rating', 3),
+                'tier': 'regular',
+                'has_impact': False,
+                'batting_impact': 0,
+                'bowling_impact': 0
+            })
+        
+        # Sort by batting average descending
+        players.sort(key=lambda x: x['batting_avg'], reverse=True)
+        
         return jsonify({
             'players': players,
             'count': len(players)
         })
     except Exception as e:
+        import traceback
+        print(f"ERROR in /api/players: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/venues', methods=['GET'])

@@ -180,12 +180,14 @@ print(f"{'='*80}")
 import os
 os.makedirs('../models', exist_ok=True)
 
-# Save pipeline
-with open('../models/progressive_model_full_features.pkl', 'wb') as f:
+# Save pipeline with NEW suffix to keep old model
+model_name = 'progressive_model_full_features_NEW.pkl'
+with open(f'../models/{model_name}', 'wb') as f:
     pickle.dump(pipeline, f)
-print(f"\n   [SAVED] ../models/progressive_model_full_features.pkl")
+print(f"\n   [SAVED] ../models/{model_name}")
+print(f"   [NOTE] Old model preserved: progressive_model_full_features.pkl")
 
-# Save feature names
+# Save feature names (same for both models)
 feature_info = {
     'numeric_features': numeric_features,
     'categorical_features': categorical_features,
@@ -214,9 +216,11 @@ metadata = {
         'accuracy_within_30': float(100*within_30/len(y_test))
     }
 }
-with open('../models/training_metadata.json', 'w') as f:
+# Save metadata with NEW suffix
+metadata_name = 'training_metadata_NEW.json'
+with open(f'../models/{metadata_name}', 'w') as f:
     json.dump(metadata, f, indent=2)
-print(f"   [SAVED] ../models/training_metadata.json")
+print(f"   [SAVED] ../models/{metadata_name}")
 
 # ==============================================================================
 # ASSESSMENT

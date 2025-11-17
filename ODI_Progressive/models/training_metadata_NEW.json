@@ -1,0 +1,18 @@
+{
+  "training_date": "2025-11-17T12:06:24.360690",
+  "training_samples": 11064,
+  "test_samples": 1230,
+  "model": "XGBRegressor",
+  "parameters": {
+    "n_estimators": 400,
+    "max_depth": 7,
+    "learning_rate": 0.1
+  },
+  "performance": {
+    "overall_r2": 0.5075416564941406,
+    "overall_mae": 37.942691802978516,
+    "accuracy_within_10": 21.463414634146343,
+    "accuracy_within_20": 39.91869918699187,
+    "accuracy_within_30": 52.4390243902439
+  }
+}

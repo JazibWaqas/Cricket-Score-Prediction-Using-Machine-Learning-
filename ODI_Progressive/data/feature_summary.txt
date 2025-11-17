@@ -2,9 +2,9 @@
 PROGRESSIVE ODI DATASET - FULL FEATURES
 ================================================================================
 
-Total samples: 12,254
-Training: 11,032 (2,297 matches)
-Testing: 1,222 (256 matches)
+Total samples: 12,294
+Training: 11,064 (2,304 matches)
+Testing: 1,230 (257 matches)
 
 Features (15 numeric + 1 categorical):
    1. current_score
