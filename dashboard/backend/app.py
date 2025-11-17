@@ -28,7 +28,16 @@ def health():
     return jsonify({
         'status': 'healthy',
         'model_loaded': model_loader.model is not None,
-        'players_loaded': model_loader.player_db is not None
+        'players_loaded': model_loader.player_db is not None,
+        'available_models': list(model_loader.models.keys())
+    })
+
+@app.route('/api/models', methods=['GET'])
+def get_models():
+    """Get list of available models"""
+    return jsonify({
+        'models': list(model_loader.models.keys()),
+        'default': 'XGBoost' if 'XGBoost' in model_loader.models else list(model_loader.models.keys())[0] if model_loader.models else None
     })
 
 @app.route('/api/teams', methods=['GET'])
@@ -170,6 +179,12 @@ def predict():
             print(f"ERROR in team aggregates calculation: {e}")
             return jsonify({'error': f'Team calculation error: {str(e)}'}), 500
         
+        # Get model to use (default to XGBoost)
+        model_name = data.get('model', 'XGBoost')
+        model = model_loader.get_model(model_name)
+        if model is None:
+            return jsonify({'error': f'Model "{model_name}" not available. Available: {list(model_loader.models.keys())}'}), 400
+        
         # Get current batsmen averages (if provided)
         batsman_1_avg = 0
         batsman_2_avg = 0
@@ -210,7 +225,7 @@ def predict():
             return jsonify({'error': f'Scenario building error: {str(e)}'}), 500
         
         # Make prediction
-        predicted_score = make_prediction(model_loader.model, scenario)
+        predicted_score = make_prediction(model, scenario)
         
         # Calculate confidence
         stage = get_match_stage(data['balls_bowled'])
@@ -294,14 +309,20 @@ def whatif():
             'venue': base_data['venue']
         }
         
-        base_prediction = make_prediction(model_loader.model, base_scenario)
+        # Get model to use
+        model_name = base_data.get('model', 'XGBoost')
+        model = model_loader.get_model(model_name)
+        if model is None:
+            return jsonify({'error': f'Model "{model_name}" not available'}), 400
+        
+        base_prediction = make_prediction(model, base_scenario)
         
         # New scenario with swapped batsman
         new_batsman_avg = get_batsman_avg(new_batsman, model_loader.player_db)
         new_scenario = base_scenario.copy()
         new_scenario['batsman_2_avg'] = new_batsman_avg
         
-        new_prediction = make_prediction(model_loader.model, new_scenario)
+        new_prediction = make_prediction(model, new_scenario)
         
         impact = new_prediction - base_prediction
         
@@ -352,6 +373,12 @@ def progressive():
             model_loader.player_db
         )
         
+        # Get model to use
+        model_name = data.get('model', 'XGBoost')
+        model = model_loader.get_model(model_name)
+        if model is None:
+            return jsonify({'error': f'Model "{model_name}" not available'}), 400
+        
         predictions = []
         
         for checkpoint in data['match_progression']:
@@ -385,7 +412,7 @@ def progressive():
                 'venue': data['venue']
             }
             
-            predicted = make_prediction(model_loader.model, scenario)
+            predicted = make_prediction(model, scenario)
             stage = get_match_stage(balls_bowled)
             mae, r2, confidence = calculate_confidence_interval(None, stage)
             

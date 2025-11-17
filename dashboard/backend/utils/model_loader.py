@@ -5,22 +5,50 @@ from config import Config
 
 class ModelLoader:
     def __init__(self):
-        self.model = None
+        self.models = {}  # Dictionary to store all models
+        self.model = None  # Default model (XGBoost for backward compatibility)
         self.player_db = None
         self.venues = {}
-        self.load_model()
+        self.load_all_models()
         self.load_player_database()
         self.load_venues()
     
-    def load_model(self):
-        """Load the trained ODI Progressive model"""
-        try:
-            with open(Config.MODEL_PATH, 'rb') as f:
-                self.model = pickle.load(f)
-            print(f"[OK] Model loaded from {Config.MODEL_PATH}")
-        except Exception as e:
-            print(f"[ERROR] Error loading model: {e}")
-            raise
+    def load_all_models(self):
+        """Load all available models (XGBoost, RandomForest, LinearRegression)"""
+        model_files = {
+            'XGBoost': Config.MODEL_PATH,  # Original XGBoost model
+            'RandomForest': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_randomforest.pkl'),
+            'LinearRegression': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_linearregression.pkl')
+        }
+        
+        # Also try the new XGBoost model
+        new_xgb_path = os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_xgboost.pkl')
+        if os.path.exists(new_xgb_path):
+            model_files['XGBoost'] = new_xgb_path
+        
+        for model_name, model_path in model_files.items():
+            try:
+                if os.path.exists(model_path):
+                    with open(model_path, 'rb') as f:
+                        self.models[model_name] = pickle.load(f)
+                    print(f"[OK] {model_name} model loaded from {model_path}")
+                else:
+                    print(f"[WARNING] {model_name} model not found at {model_path}")
+            except Exception as e:
+                print(f"[ERROR] Error loading {model_name} model: {e}")
+        
+        # Set default model (prefer XGBoost, fallback to first available)
+        if 'XGBoost' in self.models:
+            self.model = self.models['XGBoost']
+        elif len(self.models) > 0:
+            self.model = list(self.models.values())[0]
+            print(f"[INFO] Using {list(self.models.keys())[0]} as default model")
+        else:
+            raise Exception("No models loaded!")
+    
+    def get_model(self, model_name='XGBoost'):
+        """Get a specific model by name"""
+        return self.models.get(model_name, self.model)  # Fallback to default if not found
     
     def load_player_database(self):
         """Load player database with batting/bowling stats"""

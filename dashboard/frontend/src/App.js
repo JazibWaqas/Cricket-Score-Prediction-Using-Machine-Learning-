@@ -43,10 +43,15 @@ function App() {
   // Show players from any country when true (What-if scenario)
   const [whatIfAllPlayers, setWhatIfAllPlayers] = useState(false);
   
+  // Model selection
+  const [selectedModel, setSelectedModel] = useState('XGBoost');
+  const [availableModels, setAvailableModels] = useState(['XGBoost']);
+  
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Load essential data first
         const [teamsRes, playersRes, venuesRes] = await Promise.all([
           api.getTeams(),
           api.getPlayers(),
@@ -56,6 +61,19 @@ function App() {
         setTeams(teamsRes.data.teams);
         setPlayers(playersRes.data.players);
         setVenues(venuesRes.data.venues);
+        
+        // Load models separately (non-critical, has fallback)
+        try {
+          const modelsRes = await api.getModels();
+          if (modelsRes.data.models) {
+            setAvailableModels(modelsRes.data.models);
+            setSelectedModel(modelsRes.data.default || modelsRes.data.models[0]);
+          }
+        } catch (modelErr) {
+          console.warn('Could not load models, using default:', modelErr);
+          // Keep default XGBoost
+        }
+        
         setLoading(false);
       } catch (err) {
         setError('Failed to load data. Make sure backend is running on port 5002');
@@ -141,7 +159,8 @@ function App() {
         balls_bowled: balls_bowled,
         runs_last_10_overs: runs_last_10,
         batsman_1: matchScenario.batsman_1,
-        batsman_2: matchScenario.batsman_2
+        batsman_2: matchScenario.batsman_2,
+        model: selectedModel  // Include selected model
       };
       
       console.log('Sending prediction request:', requestData);
@@ -186,7 +205,22 @@ function App() {
           </motion.div>
         )}
         
-        <div className="mb-4">
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          {/* Model Selector */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-dark-muted">Model:</label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-dark focus:outline-none focus:ring-2 focus:ring-cricket-primary"
+            >
+              {availableModels.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* What-if checkbox */}
           <label className="inline-flex items-center gap-3 text-sm text-dark-muted">
             <input
               type="checkbox"

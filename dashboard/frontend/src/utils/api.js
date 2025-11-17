@@ -26,6 +26,9 @@ export const api = {
   // Get venues
   getVenues: () => axios.get(`${API_BASE_URL}/venues`),
   
+  // Get available models
+  getModels: () => axios.get(`${API_BASE_URL}/models`),
+  
   // Make prediction
   predict: (data) => axios.post(`${API_BASE_URL}/predict`, data),
   
