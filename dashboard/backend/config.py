@@ -3,7 +3,7 @@ import os
 class Config:
     # Paths
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    MODEL_PATH = os.path.join(BASE_DIR, '../../ODI_Progressive/models/progressive_model_full_features.pkl')
+    MODEL_PATH = os.path.join(BASE_DIR, '../../ODI_Progressive/models/progressive_model_xgboost_v2.pkl')
     PLAYER_DB_PATH = os.path.join(BASE_DIR, '../../ODI_Progressive/CURRENT_player_database_977_quality_FIXED.json')
     TEST_DATA_PATH = os.path.join(BASE_DIR, '../../ODI_Progressive/data/progressive_full_test.csv')
     
