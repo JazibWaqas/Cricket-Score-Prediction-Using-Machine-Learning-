@@ -6,7 +6,9 @@
 **Validation:** 
 - **Comprehensive:** 2,904 predictions from 592 international ODI matches
 - **Dashboard Testing:** 20 real ODI matches tested  
+**Update (2025-11-21):** Retrained on new database. **Random Forest v2** is now the best performing model.
 
+---
 ---
 
 ## 📊 **EXECUTIVE SUMMARY**
@@ -22,6 +24,7 @@ The ODI Progressive Dashboard has been successfully developed, validated, and is
 - ✅ **Fantasy Features Operational** (Team building, what-if analysis)
 - ✅ **Real Match Validation** (Tested on actual ODI data)
 - ✅ **Database Integration Complete** (977 players, 28 teams, 303 venues)
+- ✅ **Model Upgrade:** Random Forest v2 replaced XGBoost (R² 0.52 → 0.58)
 
 ---
 

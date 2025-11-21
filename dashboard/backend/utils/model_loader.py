@@ -14,35 +14,44 @@ class ModelLoader:
         self.load_venues()
     
     def load_all_models(self):
-        """Load all available models (XGBoost, RandomForest, LinearRegression)"""
-        model_files = {
-            'XGBoost': Config.MODEL_PATH,  # Original XGBoost model
-            'RandomForest': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_randomforest.pkl'),
-            'LinearRegression': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_linearregression.pkl')
+        """Load all available models (Prioritizing v2 models)"""
+        # Define the FINAL v2 models
+        # Keys are formatted to match frontend expectations (e.g. "Random Forest" -> value "random_forest")
+        v2_models = {
+            'XGBoost': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_xgboost_v2.pkl'),
+            'Random Forest': os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_random_forest_v2.pkl')
         }
         
-        # Also try the new XGBoost model
-        new_xgb_path = os.path.join(os.path.dirname(Config.MODEL_PATH), 'progressive_model_xgboost.pkl')
-        if os.path.exists(new_xgb_path):
-            model_files['XGBoost'] = new_xgb_path
-        
-        for model_name, model_path in model_files.items():
+        # Load them
+        for model_name, model_path in v2_models.items():
             try:
                 if os.path.exists(model_path):
                     with open(model_path, 'rb') as f:
                         self.models[model_name] = pickle.load(f)
-                    print(f"[OK] {model_name} model loaded from {model_path}")
+                    print(f"[OK] {model_name} (v2) loaded from {model_path}")
                 else:
-                    print(f"[WARNING] {model_name} model not found at {model_path}")
+                    print(f"[WARNING] {model_name} (v2) not found at {model_path}")
             except Exception as e:
-                print(f"[ERROR] Error loading {model_name} model: {e}")
-        
-        # Set default model (prefer XGBoost, fallback to first available)
-        if 'XGBoost' in self.models:
+                print(f"[ERROR] Error loading {model_name}: {e}")
+
+        # Fallback to old models if v2 not found (for safety)
+        if 'XGBoost' not in self.models:
+            try:
+                with open(Config.MODEL_PATH, 'rb') as f:
+                    self.models['XGBoost'] = pickle.load(f)
+                print(f"[INFO] Loaded legacy XGBoost model as fallback")
+            except:
+                pass
+
+        # Set default model (Random Forest is the champion)
+        if 'Random Forest' in self.models:
+            self.model = self.models['Random Forest']
+            print(f"[INFO] Using Random Forest (v2) as default model")
+        elif 'XGBoost' in self.models:
             self.model = self.models['XGBoost']
+            print(f"[INFO] Using XGBoost (v2) as default model")
         elif len(self.models) > 0:
             self.model = list(self.models.values())[0]
-            print(f"[INFO] Using {list(self.models.keys())[0]} as default model")
         else:
             raise Exception("No models loaded!")
     

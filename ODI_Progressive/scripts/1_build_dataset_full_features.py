@@ -339,13 +339,13 @@ print("\n[5/6] Saving datasets...")
 
 os.makedirs('../data', exist_ok=True)
 
-df.to_csv('../data/progressive_full_features_dataset.csv', index=False)
-train_df.to_csv('../data/progressive_full_train.csv', index=False)
-test_df.to_csv('../data/progressive_full_test.csv', index=False)
+df.to_csv('../data/progressive_full_features_dataset_v2.csv', index=False)
+train_df.to_csv('../data/progressive_full_train_v2.csv', index=False)
+test_df.to_csv('../data/progressive_full_test_v2.csv', index=False)
 
-print(f"   [SAVED] ../data/progressive_full_features_dataset.csv ({len(df):,} rows)")
-print(f"   [SAVED] ../data/progressive_full_train.csv ({len(train_df):,} rows)")
-print(f"   [SAVED] ../data/progressive_full_test.csv ({len(test_df):,} rows)")
+print(f"   [SAVED] ../data/progressive_full_features_dataset_v2.csv ({len(df):,} rows)")
+print(f"   [SAVED] ../data/progressive_full_train_v2.csv ({len(train_df):,} rows)")
+print(f"   [SAVED] ../data/progressive_full_test_v2.csv ({len(test_df):,} rows)")
 
 # ==============================================================================
 # STEP 7: SUMMARY
@@ -374,9 +374,9 @@ for ball in [1, 60, 120, 180, 240]:
     print(f"   - Ball {ball:>3} (Over {ball//6:>2}): {count:>5} samples")
 
 # Save summary
-with open('../data/feature_summary.txt', 'w') as f:
+with open('../data/feature_summary_v2.txt', 'w') as f:
     f.write("="*80 + "\n")
-    f.write("PROGRESSIVE ODI DATASET - FULL FEATURES\n")
+    f.write("PROGRESSIVE ODI DATASET - FULL FEATURES (V2)\n")
     f.write("="*80 + "\n\n")
     f.write(f"Total samples: {len(df):,}\n")
     f.write(f"Training: {len(train_df):,} ({len(train_matches):,} matches)\n")
@@ -387,7 +387,7 @@ with open('../data/feature_summary.txt', 'w') as f:
     f.write(f"  16. venue (categorical)\n\n")
     f.write(f"Target: final_score\n")
 
-print(f"   [SAVED] ../data/feature_summary.txt")
+print(f"   [SAVED] ../data/feature_summary_v2.txt")
 
 print(f"\n{'='*80}")
 print("DATASET BUILD COMPLETE!")

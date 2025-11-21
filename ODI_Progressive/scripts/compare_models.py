@@ -31,18 +31,34 @@ except Exception as e:
     print(f"   [ERROR] Could not load old model: {e}")
     old_model = None
 
-# Load new model
+# Load new XGBoost model (v2)
 try:
-    with open('../models/progressive_model_full_features_NEW.pkl', 'rb') as f:
-        new_model = pickle.load(f)
-    print("   [OK] New model loaded")
+    with open('../models/progressive_model_xgboost_v2.pkl', 'rb') as f:
+        xgb_model = pickle.load(f)
+    print("   [OK] XGBoost v2 model loaded")
 except Exception as e:
-    print(f"   [ERROR] Could not load new model: {e}")
-    new_model = None
+    print(f"   [ERROR] Could not load XGBoost v2 model: {e}")
+    xgb_model = None
 
-if old_model is None or new_model is None:
-    print("\n[ERROR] Cannot compare - one or both models missing")
-    exit(1)
+# Load Random Forest model (v2)
+try:
+    with open('../models/progressive_model_random_forest_v2.pkl', 'rb') as f:
+        rf_model = pickle.load(f)
+    print("   [OK] Random Forest v2 model loaded")
+except Exception as e:
+    print(f"   [WARNING] Could not load Random Forest v2 model: {e}")
+    rf_model = None
+
+# Load Linear Regression model (v2)
+try:
+    with open('../models/progressive_model_linear_regression_v2.pkl', 'rb') as f:
+        lr_model = pickle.load(f)
+    print("   [OK] Linear Regression v2 model loaded")
+except Exception as e:
+    print(f"   [WARNING] Could not load Linear Regression v2 model: {e}")
+    lr_model = None
+
+
 
 # ==============================================================================
 # STEP 2: LOAD VALIDATION DATA
@@ -50,8 +66,8 @@ if old_model is None or new_model is None:
 
 print("\n[2/4] Loading validation data...")
 
-# Use test set for comparison
-test_df = pd.read_csv('../data/progressive_full_test.csv')
+# Use v2 test set for comparison
+test_df = pd.read_csv('../data/progressive_full_test_v2.csv')
 
 # Load feature names
 with open('../models/feature_names.json', 'r') as f:
@@ -70,11 +86,16 @@ print(f"   Test samples: {len(X_test):,}")
 
 print("\n[3/4] Making predictions...")
 
-print("   Predicting with OLD model...")
-y_pred_old = old_model.predict(X_test)
+models = {}
+if old_model: models['Old XGBoost'] = old_model
+if xgb_model: models['XGBoost v2'] = xgb_model
+if rf_model: models['Random Forest v2'] = rf_model
+if lr_model: models['Linear Regression v2'] = lr_model
 
-print("   Predicting with NEW model...")
-y_pred_new = new_model.predict(X_test)
+predictions = {}
+for name, model in models.items():
+    print(f"   Predicting with {name}...")
+    predictions[name] = model.predict(X_test)
 
 # ==============================================================================
 # STEP 4: COMPARE RESULTS
@@ -82,144 +103,37 @@ y_pred_new = new_model.predict(X_test)
 
 print("\n[4/4] Comparing results...")
 
-# Overall metrics
-old_r2 = r2_score(y_test, y_pred_old)
-new_r2 = r2_score(y_test, y_pred_new)
-old_mae = mean_absolute_error(y_test, y_pred_old)
-new_mae = mean_absolute_error(y_test, y_pred_new)
-
-# Accuracy bands
-old_errors = np.abs(y_pred_old - y_test)
-new_errors = np.abs(y_pred_new - y_test)
-
-old_within_10 = (old_errors <= 10).sum()
-old_within_20 = (old_errors <= 20).sum()
-old_within_30 = (old_errors <= 30).sum()
-
-new_within_10 = (new_errors <= 10).sum()
-new_within_20 = (new_errors <= 20).sum()
-new_within_30 = (new_errors <= 30).sum()
+results = {}
+for name, y_pred in predictions.items():
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+    errors = np.abs(y_pred - y_test)
+    within_30 = (errors <= 30).sum()
+    
+    results[name] = {
+        'r2': float(r2),
+        'mae': float(mae),
+        'within_30': int(within_30),
+        'within_30_pct': float(100 * within_30 / len(y_test))
+    }
 
 # Print comparison
-print("\n" + "="*80)
+print("\n" + "="*100)
 print("COMPARISON RESULTS")
-print("="*80)
+print("="*100)
 
-print(f"\n{'Metric':<30} {'OLD Model':<20} {'NEW Model':<20} {'Difference':<20}")
-print("-" * 90)
-
-# R²
-r2_diff = new_r2 - old_r2
-r2_pct = (r2_diff / old_r2 * 100) if old_r2 > 0 else 0
-print(f"{'R² Score':<30} {old_r2:.4f} ({old_r2*100:.2f}%){'':<5} {new_r2:.4f} ({new_r2*100:.2f}%){'':<5} {r2_diff:+.4f} ({r2_pct:+.2f}%)")
-
-# MAE
-mae_diff = new_mae - old_mae
-mae_pct = (mae_diff / old_mae * 100) if old_mae > 0 else 0
-print(f"{'MAE (runs)':<30} {old_mae:.2f}{'':<12} {new_mae:.2f}{'':<12} {mae_diff:+.2f} ({mae_pct:+.2f}%)")
-
-# Accuracy bands
-print(f"\n{'Accuracy Band':<30} {'OLD Model':<20} {'NEW Model':<20} {'Difference':<20}")
-print("-" * 90)
-
-for threshold, old_count, new_count in [(10, old_within_10, new_within_10),
-                                        (20, old_within_20, new_within_20),
-                                        (30, old_within_30, new_within_30)]:
-    old_pct = 100 * old_count / len(y_test)
-    new_pct = 100 * new_count / len(y_test)
-    diff_pct = new_pct - old_pct
-    print(f"Within ±{threshold} runs{'':<20} {old_pct:.1f}% ({old_count}/{len(y_test)}){'':<5} {new_pct:.1f}% ({new_count}/{len(y_test)}){'':<5} {diff_pct:+.1f}%")
-
-# Performance by stage
-print(f"\n{'='*80}")
-print("PERFORMANCE BY MATCH STAGE")
-print("="*80)
-
-stages = [
-    ("Pre-match (0-10 overs)", 240, 300),
-    ("Early (10-20 overs)", 180, 240),
-    ("Mid (20-30 overs)", 120, 180),
-    ("Late (30-40 overs)", 60, 120),
-    ("Death (40-50 overs)", 0, 60)
-]
-
-print(f"\n{'Stage':<25} {'OLD R²':<12} {'NEW R²':<12} {'OLD MAE':<12} {'NEW MAE':<12}")
+print(f"\n{'Model':<25} {'R² Score':<15} {'MAE (runs)':<15} {'Accuracy (±30)':<20}")
 print("-" * 80)
 
-for stage_name, min_balls, max_balls in stages:
-    mask = (test_df['balls_remaining'] >= min_balls) & (test_df['balls_remaining'] < max_balls)
-    if mask.sum() > 0:
-        old_stage_r2 = r2_score(y_test[mask], y_pred_old[mask])
-        new_stage_r2 = r2_score(y_test[mask], y_pred_new[mask])
-        old_stage_mae = mean_absolute_error(y_test[mask], y_pred_old[mask])
-        new_stage_mae = mean_absolute_error(y_test[mask], y_pred_new[mask])
-        
-        print(f"{stage_name:<25} {old_stage_r2:.4f}{'':<6} {new_stage_r2:.4f}{'':<6} {old_stage_mae:.2f}{'':<8} {new_stage_mae:.2f}")
-
-# ==============================================================================
-# VERDICT
-# ==============================================================================
-
-print(f"\n{'='*80}")
-print("VERDICT")
-print("="*80)
-
-better_r2 = new_r2 > old_r2
-better_mae = new_mae < old_mae
-better_accuracy = new_within_30 > old_within_30
-
-improvements = sum([better_r2, better_mae, better_accuracy])
-
-if improvements >= 2:
-    verdict = "[BETTER] NEW MODEL IS BETTER"
-    recommendation = "Use the NEW model (progressive_model_full_features_NEW.pkl)"
-elif improvements == 1:
-    verdict = "[MIXED] MIXED RESULTS"
-    recommendation = "New model has some improvements but also some regressions. Review detailed metrics."
-else:
-    verdict = "[BETTER] OLD MODEL IS BETTER"
-    recommendation = "Keep using the OLD model (progressive_model_full_features.pkl)"
-
-print(f"\n{verdict}")
-print(f"\nRecommendation: {recommendation}")
-
-print(f"\nDetailed comparison:")
-print(f"  R²: {'NEW better' if better_r2 else 'OLD better'} ({abs(r2_diff):.4f} difference)")
-print(f"  MAE: {'NEW better' if better_mae else 'OLD better'} ({abs(mae_diff):.2f} runs difference)")
-print(f"  Accuracy (±30): {'NEW better' if better_accuracy else 'OLD better'} ({abs(new_within_30 - old_within_30)} samples difference)")
+for name, metrics in results.items():
+    print(f"{name:<25} {metrics['r2']:.4f}{'':<9} {metrics['mae']:.2f}{'':<9} {metrics['within_30_pct']:.1f}%")
 
 # Save comparison results
 os.makedirs('../results', exist_ok=True)
-comparison = {
-    'old_model': {
-        'r2': float(old_r2),
-        'mae': float(old_mae),
-        'accuracy_within_10': float(100 * old_within_10 / len(y_test)),
-        'accuracy_within_20': float(100 * old_within_20 / len(y_test)),
-        'accuracy_within_30': float(100 * old_within_30 / len(y_test))
-    },
-    'new_model': {
-        'r2': float(new_r2),
-        'mae': float(new_mae),
-        'accuracy_within_10': float(100 * new_within_10 / len(y_test)),
-        'accuracy_within_20': float(100 * new_within_20 / len(y_test)),
-        'accuracy_within_30': float(100 * new_within_30 / len(y_test))
-    },
-    'difference': {
-        'r2': float(r2_diff),
-        'mae': float(mae_diff),
-        'accuracy_within_10': float(100 * (new_within_10 - old_within_10) / len(y_test)),
-        'accuracy_within_20': float(100 * (new_within_20 - old_within_20) / len(y_test)),
-        'accuracy_within_30': float(100 * (new_within_30 - old_within_30) / len(y_test))
-    },
-    'verdict': verdict,
-    'recommendation': recommendation
-}
+with open('../results/model_comparison_v2.json', 'w') as f:
+    json.dump(results, f, indent=2)
 
-with open('../results/model_comparison.json', 'w') as f:
-    json.dump(comparison, f, indent=2)
-
-print(f"\n[SAVED] ../results/model_comparison.json")
+print(f"\n[SAVED] ../results/model_comparison_v2.json")
 
 print("\n" + "="*80 + "\n")
 

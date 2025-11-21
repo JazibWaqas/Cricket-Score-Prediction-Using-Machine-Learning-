@@ -25,19 +25,23 @@ db = get_database()
 
 def resolve_model_identifier(identifier):
     """Map a canonical identifier (e.g. 'xgboost' or 'random_forest') to the
-    model key used by the ModelLoader (e.g. 'XGBoost' or 'RandomForest').
-    If no mapping found, return the identifier as-is.
+    model key used by the ModelLoader (e.g. 'XGBoost' or 'Random Forest').
     """
     if not identifier:
         return identifier
+        
+    # Normalize input: lowercase, remove all non-alphanumeric chars
     import re
-    # normalize incoming identifier to underscore style (e.g. 'random_forest')
-    lookup = identifier.lower().replace(' ', '_')
-    # compare against normalized model loader keys (convert CamelCase -> underscore)
+    lookup = re.sub(r'[^a-z0-9]', '', identifier.lower())
+    
+    # Check against available keys
     for key in model_loader.models.keys():
-        key_normalized = re.sub(r'(?<!^)(?=[A-Z])', '_', key).lower().replace(' ', '_')
+        # Normalize key similarly
+        key_normalized = re.sub(r'[^a-z0-9]', '', key.lower())
+        
         if key_normalized == lookup:
             return key
+            
     return identifier
 
 @app.route('/api/health', methods=['GET'])

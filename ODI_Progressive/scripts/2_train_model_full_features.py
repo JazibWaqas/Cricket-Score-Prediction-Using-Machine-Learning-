@@ -32,8 +32,8 @@ print("="*80)
 
 print("\n[1/5] Loading training data...")
 
-train_df = pd.read_csv('../data/progressive_full_train.csv')
-test_df = pd.read_csv('../data/progressive_full_test.csv')
+train_df = pd.read_csv('../data/progressive_full_train_v2.csv')
+test_df = pd.read_csv('../data/progressive_full_test_v2.csv')
 
 print(f"   Training: {len(train_df):,} samples")
 print(f"   Testing: {len(test_df):,} samples")
@@ -180,8 +180,8 @@ print(f"{'='*80}")
 import os
 os.makedirs('../models', exist_ok=True)
 
-# Save pipeline with NEW suffix to keep old model
-model_name = 'progressive_model_full_features_NEW.pkl'
+# Save pipeline with v2 suffix
+model_name = 'progressive_model_xgboost_v2.pkl'
 with open(f'../models/{model_name}', 'wb') as f:
     pickle.dump(pipeline, f)
 print(f"\n   [SAVED] ../models/{model_name}")
@@ -216,8 +216,8 @@ metadata = {
         'accuracy_within_30': float(100*within_30/len(y_test))
     }
 }
-# Save metadata with NEW suffix
-metadata_name = 'training_metadata_NEW.json'
+# Save metadata with v2 suffix
+metadata_name = 'training_metadata_xgboost_v2.json'
 with open(f'../models/{metadata_name}', 'w') as f:
     json.dump(metadata, f, indent=2)
 print(f"   [SAVED] ../models/{metadata_name}")
