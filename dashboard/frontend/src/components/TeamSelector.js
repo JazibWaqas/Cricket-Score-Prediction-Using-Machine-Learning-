@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, X, Search } from 'lucide-react';
 
-const TeamSelector = ({ 
-  teamType, 
-  team, 
-  teams, 
-  players, 
+const TeamSelector = ({
+  teamType,
+  team,
+  teams,
+  players,
   whatIfAllPlayers = false,
-  onTeamSelect, 
-  onPlayerSelect, 
-  onRemovePlayer 
+  onTeamSelect,
+  onPlayerSelect,
+  onRemovePlayer
 }) => {
   const [showPlayerDropdown, setShowPlayerDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState('All');
 
   const handleTeamChange = (e) => {
     const teamId = parseInt(e.target.value);
@@ -30,23 +31,48 @@ const TeamSelector = ({
     }
   };
 
+  // Role icon helper
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'Batsman': return '🏏';
+      case 'Bowler': return '🎳';
+      case 'All-rounder': return '⚖️';
+      default: return '👤';
+    }
+  };
+
+  const getRoleBadgeColor = (role) => {
+    switch (role) {
+      case 'Batsman': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
+      case 'Bowler': return 'bg-red-500/20 text-red-400 border-red-500/50';
+      case 'All-rounder': return 'bg-purple-500/20 text-purple-400 border-purple-500/50';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50';
+    }
+  };
+
   const filteredPlayers = players.filter(player => {
     const query = searchQuery.toLowerCase();
     const name = (player.player_name || '').toLowerCase();
     const country = (player.country || '').toLowerCase();
-    
+    const role = player.player_role || 'All-rounder';
+
     // Not already selected
     const notSelected = !team.players.some(p => p.id === player.player_id);
+
+    // Role filter
+    const matchesRole = selectedRole === 'All' || role === selectedRole;
 
     // If a team/country is selected and we're NOT in a what-if-all-players mode,
     // only include players whose `country` matches the selected team name.
     if (team.team_name && !whatIfAllPlayers) {
       const matchesCountry = country === (team.team_name || '').toLowerCase();
-      return (name.includes(query) || country.includes(query)) && notSelected && matchesCountry;
+      return (name.includes(query) || country.includes(query)) && notSelected && matchesCountry && matchesRole;
     }
 
-    return (name.includes(query) || country.includes(query)) && notSelected;
+    return (name.includes(query) || country.includes(query)) && notSelected && matchesRole;
   });
+
+  const roleOptions = ['All', 'Batsman', 'All-rounder', 'Bowler'];
 
   return (
     <motion.div
@@ -125,6 +151,22 @@ const TeamSelector = ({
                 className="mb-4"
               >
                 <div className="relative">
+                  {/* Role Filter Tabs */}
+                  <div className="flex gap-2 mb-3 flex-wrap">
+                    {roleOptions.map(role => (
+                      <button
+                        key={role}
+                        onClick={() => setSelectedRole(role)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedRole === role
+                            ? 'bg-cricket-green text-white'
+                            : 'bg-dark-card text-dark-muted hover:bg-dark-border'
+                          }`}
+                      >
+                        {getRoleIcon(role)} {role}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="flex items-center gap-2 mb-2">
                     <Search className="h-4 w-4 text-dark-muted" />
                     <input
@@ -135,11 +177,11 @@ const TeamSelector = ({
                       className="cricket-input flex-1 text-sm"
                     />
                   </div>
-                  
+
                   <div className="mb-2 text-sm text-dark-muted">
                     Showing {Math.min(50, filteredPlayers.length)} of {filteredPlayers.length} players
                   </div>
-                  
+
                   <div className="max-h-64 overflow-y-auto border border-dark-border rounded-lg bg-dark-card">
                     {filteredPlayers.slice(0, 50).map(player => (
                       <motion.button
@@ -150,14 +192,22 @@ const TeamSelector = ({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-medium text-dark-text">
-                              {player.player_name}
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{getRoleIcon(player.player_role)}</span>
+                              <div className="font-medium text-dark-text">
+                                {player.player_name}
+                              </div>
+                              <span className={`text-xs px-2 py-0.5 rounded border ${getRoleBadgeColor(player.player_role)}`}>
+                                {player.player_role}
+                              </span>
                             </div>
-                            <div className="text-xs text-dark-muted flex items-center gap-2">
+                            <div className="text-xs text-dark-muted flex items-center gap-2 mt-1">
                               <span>{player.country}</span>
-                              {player.player_role && <span>• {player.player_role}</span>}
                               {player.batting_avg > 0 && (
                                 <span>• Avg: {player.batting_avg.toFixed(1)}</span>
+                              )}
+                              {player.bowling_economy > 0 && (
+                                <span>• Econ: {player.bowling_economy.toFixed(1)}</span>
                               )}
                             </div>
                           </div>
@@ -166,7 +216,7 @@ const TeamSelector = ({
                     ))}
                     {filteredPlayers.length === 0 && (
                       <div className="p-6 text-center text-dark-muted">
-                        No players found. Try adjusting your search.
+                        No players found. Try adjusting your search or role filter.
                       </div>
                     )}
                   </div>

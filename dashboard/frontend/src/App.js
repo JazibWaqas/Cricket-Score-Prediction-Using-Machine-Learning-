@@ -5,6 +5,8 @@ import TeamSelector from './components/TeamSelector';
 import MatchScenario from './components/MatchScenario';
 import PredictionDisplay from './components/PredictionDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
+import MatchContextDisplay from './components/MatchContextDisplay';
+import TeamFormationDisplay from './components/TeamFormationDisplay';
 import api from './utils/api';
 
 function App() {
@@ -15,20 +17,20 @@ function App() {
   const [predicting, setPredicting] = useState(false);
   const [prediction, setPrediction] = useState(null);
   const [error, setError] = useState(null);
-  
+
   // Team selection - matches root frontend structure
   const [teamA, setTeamA] = useState({
     team_id: null,
     team_name: '',
     players: []
   });
-  
+
   const [teamB, setTeamB] = useState({
     team_id: null,
     team_name: '',
     players: []
   });
-  
+
   // Match scenario
   const [matchScenario, setMatchScenario] = useState({
     venue: '',
@@ -42,7 +44,7 @@ function App() {
   });
   // Show players from any country when true (What-if scenario)
   const [whatIfAllPlayers, setWhatIfAllPlayers] = useState(false);
-  
+
   // Model selection
   // selectedModel stores the canonical identifier (value), e.g. 'xgboost' or 'random_forest'
   const [selectedModel, setSelectedModel] = useState('xgboost');
@@ -51,7 +53,7 @@ function App() {
     { label: 'XGBoost', value: 'xgboost' },
     { label: 'Random Forest', value: 'random_forest' }
   ]);
-  
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -62,15 +64,15 @@ function App() {
           api.getPlayers(),
           api.getVenues()
         ]);
-        
+
         setTeams(teamsRes.data.teams);
         setPlayers(playersRes.data.players);
         setVenues(venuesRes.data.venues);
-        
+
         // Load models separately (non-critical, has fallback)
         try {
           const modelsRes = await api.getModels();
-            if (modelsRes.data.models) {
+          if (modelsRes.data.models) {
             // modelsRes.data.models expected format: [{label, value}, ...] or string list
             const remoteModels = modelsRes.data.models.map(m => {
               if (typeof m === 'string') {
@@ -99,7 +101,7 @@ function App() {
           console.warn('Could not load models, using default fallback:', modelErr);
           // Keep client-side fallback
         }
-        
+
         setLoading(false);
       } catch (err) {
         setError('Failed to load data. Make sure backend is running on port 5002');
@@ -107,10 +109,10 @@ function App() {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
-  
+
   // Handle team selection
   const handleTeamSelect = (teamType, teamId, teamName) => {
     if (teamType === 'A') {
@@ -119,11 +121,11 @@ function App() {
       setTeamB({ team_id: teamId, team_name: teamName, players: [] });
     }
   };
-  
+
   // Handle player selection
   const handlePlayerSelect = (teamType, playerId, playerName, playerCountry) => {
     const player = { id: playerId, name: playerName, country: playerCountry };
-    
+
     if (teamType === 'A') {
       if (teamA.players.length < 11) {
         setTeamA(prev => ({ ...prev, players: [...prev.players, player] }));
@@ -134,7 +136,7 @@ function App() {
       }
     }
   };
-  
+
   // Handle player removal
   const handleRemovePlayer = (teamType, playerId) => {
     if (teamType === 'A') {
@@ -143,31 +145,31 @@ function App() {
       setTeamB(prev => ({ ...prev, players: prev.players.filter(p => p.id !== playerId) }));
     }
   };
-  
+
   // Handle prediction
   const handlePredict = async () => {
     console.log('Prediction request - Team A players:', teamA.players.length);
     console.log('Prediction request - Team B players:', teamB.players.length);
     console.log('Prediction request - Venue:', matchScenario.venue);
-    
+
     if (teamA.players.length < 11) {
       setError('Please select 11 players for Team A (Batting Team)');
       return;
     }
-    
+
     if (teamB.players.length < 11) {
       setError('Please select 11 players for Team B (Opposition)');
       return;
     }
-    
+
     if (!matchScenario.venue) {
       setError('Please select a venue');
       return;
     }
-    
+
     setPredicting(true);
     setError(null);
-    
+
     try {
       const current_score = Number(matchScenario.current_score) || 0;
       const wickets_fallen = Number(matchScenario.wickets_fallen) || 0;
@@ -188,11 +190,11 @@ function App() {
         batsman_2: matchScenario.batsman_2,
         model: selectedModel  // Include selected model
       };
-      
+
       console.log('Sending prediction request:', requestData);
-      
+
       const response = await api.predict(requestData);
-      
+
       setPrediction(response.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Prediction failed. Check console for details.');
@@ -201,7 +203,7 @@ function App() {
       setPredicting(false);
     }
   };
-  
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -209,11 +211,11 @@ function App() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-dark-bg">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-6 py-8">
         {error && (
           <motion.div
@@ -222,7 +224,7 @@ function App() {
             className="mb-6 bg-red-900/20 border border-red-500/50 rounded-lg p-4 text-red-400"
           >
             {error}
-            <button 
+            <button
               onClick={() => setError(null)}
               className="ml-4 text-sm underline"
             >
@@ -230,7 +232,7 @@ function App() {
             </button>
           </motion.div>
         )}
-        
+
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           {/* Model Selector */}
           <div className="flex items-center gap-6">
@@ -244,12 +246,12 @@ function App() {
                 <button
                   key={m.value}
                   onClick={() => setSelectedModel(m.value)}
-                    className={
-                      `px-4 py-2 border rounded-lg text-sm transition-colors focus:outline-none ` +
-                      (selectedModel === m.value
-                        ? 'bg-cricket-green text-white border-cricket-green'
-                        : 'bg-black text-white border-gray-700 hover:border-cricket-green')
-                    }
+                  className={
+                    `px-4 py-2 border rounded-lg text-sm transition-colors focus:outline-none ` +
+                    (selectedModel === m.value
+                      ? 'bg-cricket-green text-white border-cricket-green'
+                      : 'bg-black text-white border-gray-700 hover:border-cricket-green')
+                  }
                   aria-pressed={selectedModel === m.value}
                 >
                   {m.label}
@@ -257,7 +259,7 @@ function App() {
               ))}
             </div>
           </div>
-          
+
           {/* What-if checkbox */}
           <label className="inline-flex items-center gap-3 text-sm text-dark-muted">
             <input
@@ -282,7 +284,7 @@ function App() {
             onPlayerSelect={handlePlayerSelect}
             onRemovePlayer={handleRemovePlayer}
           />
-          
+
           {/* Team B - Opposition */}
           <TeamSelector
             teamType="B"
@@ -295,7 +297,27 @@ function App() {
             onRemovePlayer={handleRemovePlayer}
           />
         </div>
-        
+
+        {/* Team Formation Displays */}
+        {(teamA.players.length > 0 || teamB.players.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {teamA.players.length > 0 && (
+              <TeamFormationDisplay
+                team={teamA}
+                teamType="A"
+                players={players}
+              />
+            )}
+            {teamB.players.length > 0 && (
+              <TeamFormationDisplay
+                team={teamB}
+                teamType="B"
+                players={players}
+              />
+            )}
+          </div>
+        )}
+
         {/* Match Scenario */}
         <MatchScenario
           scenario={matchScenario}
@@ -303,7 +325,15 @@ function App() {
           venues={venues}
           battingPlayers={teamA.players}
         />
-        
+
+        {/* Match Context Display */}
+        <MatchContextDisplay
+          teamA={teamA}
+          teamB={teamB}
+          scenario={matchScenario}
+          venues={venues}
+        />
+
         {/* Predict Button */}
         <div className="text-center my-8">
           <motion.button
@@ -316,7 +346,7 @@ function App() {
             {predicting ? 'Predicting...' : '🏏 Predict Final Score'}
           </motion.button>
         </div>
-        
+
         {/* Prediction Results */}
         {prediction && (
           <PredictionDisplay prediction={prediction} scenario={matchScenario} />

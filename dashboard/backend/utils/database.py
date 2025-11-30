@@ -47,13 +47,28 @@ class Database:
                 else:
                     country = countries[0] if countries else 'Unknown'
             
+            batting_avg = row['batting_avg'] or 0
+            bowling_avg = row['bowling_avg'] or 0
+            
+            # Smart role classification based on stats
+            calculated_role = self._classify_role(
+                batting_avg, 
+                bowling_avg, 
+                row['role']
+            )
+            
+            # For display purposes, estimate economy from bowling average
+            # Rough estimate: economy ≈ bowling_avg / 5 (since avg = runs/wickets, economy = runs/overs)
+            # But we'll use bowling_avg directly for role classification
+            bowling_economy = bowling_avg / 5.0 if bowling_avg > 0 else 0
+            
             players.append({
                 'player_id': row['player_id'],
                 'player_name': row['player_name'],
-                'player_role': row['role'] or 'All-rounder',
+                'player_role': calculated_role,
                 'country': country,
-                'batting_avg': row['batting_avg'] or 0,
-                'bowling_economy': (row['bowling_avg'] or 0) / 2.0,  # Convert bowling avg to economy
+                'batting_avg': batting_avg,
+                'bowling_economy': bowling_economy,  # Estimated for display
                 'total_matches': row['total_matches'] or 0,
                 'tier': 'regular',
                 'has_impact': False,
@@ -61,6 +76,51 @@ class Database:
                 'bowling_impact': 0
             })
         return players
+    
+    def _classify_role(self, batting_avg, bowling_avg, db_role):
+        """
+        Classify player role based on actual stats instead of database label.
+        
+        NOTE: bowling_avg is BOWLING AVERAGE (runs per wicket), not economy rate!
+        - Lower bowling average = better bowler (good bowlers have avg < 35)
+        - Higher batting average = better batsman (good batsmen have avg > 30)
+        
+        Rules:
+        - BATSMAN: Good batting (avg >= 30), minimal/no bowling (bowling_avg == 0 or > 50)
+        - BOWLER: Good bowling (bowling_avg > 0 and < 35), weak batting (bat_avg < 20)
+        - ALL-ROUNDER: Can both bat (avg >= 20) and bowl (bowling_avg > 0 and < 40)
+        - Fallback to database role if stats are insufficient
+        """
+        # If no stats available, use database role
+        if batting_avg == 0 and bowling_avg == 0:
+            return db_role or 'All-rounder'
+        
+        # BATSMAN: Good batting, minimal/no bowling
+        # Bowling avg > 50 means they rarely bowl or bowl poorly
+        if batting_avg >= 30 and (bowling_avg == 0 or bowling_avg > 50):
+            return 'Batsman'
+        
+        # BOWLER: Good bowling, weak batting
+        # Bowling avg < 35 is good (takes wickets cheaply)
+        if bowling_avg > 0 and bowling_avg < 35 and batting_avg < 20:
+            return 'Bowler'
+        
+        # ALL-ROUNDER: Can both bat and bowl
+        # Batting avg >= 20 (decent bat) and bowling avg < 40 (can bowl)
+        if batting_avg >= 20 and bowling_avg > 0 and bowling_avg < 40:
+            return 'All-rounder'
+        
+        # Edge cases: Only batting stats available
+        if batting_avg >= 25 and bowling_avg == 0:
+            return 'Batsman'
+        
+        # Edge cases: Only bowling stats available
+        # Good bowler with very weak batting
+        if batting_avg < 15 and bowling_avg > 0 and bowling_avg < 35:
+            return 'Bowler'
+        
+        # Fallback to database role or default
+        return db_role if db_role else 'All-rounder'
     
     def get_all_venues(self):
         """Get all venues from database"""

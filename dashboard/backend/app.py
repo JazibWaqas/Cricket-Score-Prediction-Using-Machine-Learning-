@@ -105,12 +105,34 @@ def get_all_players():
             batting = player_data.get('batting') or {}
             bowling = player_data.get('bowling') or {}
             
+            batting_avg = float(batting.get('average') or 0) if batting else 0.0
+            bowling_avg = float(bowling.get('average') or 0) if bowling else 0.0
+            
+            # Smart role classification logic (mirrors database.py)
+            # BATSMAN: Good batting (avg >= 30), minimal/no bowling (bowling_avg == 0 or > 50)
+            # BOWLER: Good bowling (bowling_avg > 0 and < 35), weak batting (bat_avg < 20)
+            # ALL-ROUNDER: Can both bat (avg >= 20) and bowl (bowling_avg > 0 and < 40)
+            
+            db_role = player_data.get('role', 'All-rounder')
+            calculated_role = db_role
+            
+            if batting_avg >= 30 and (bowling_avg == 0 or bowling_avg > 50):
+                calculated_role = 'Batsman'
+            elif bowling_avg > 0 and bowling_avg < 35 and batting_avg < 20:
+                calculated_role = 'Bowler'
+            elif batting_avg >= 20 and bowling_avg > 0 and bowling_avg < 40:
+                calculated_role = 'All-rounder'
+            elif batting_avg >= 25 and bowling_avg == 0:
+                calculated_role = 'Batsman'
+            elif batting_avg < 15 and bowling_avg > 0 and bowling_avg < 35:
+                calculated_role = 'Bowler'
+            
             players.append({
                 'player_id': player_name,  # Use name as ID
                 'player_name': player_data.get('name', player_name),
-                'player_role': player_data.get('role', 'All-rounder'),
+                'player_role': calculated_role,
                 'country': player_data.get('country', 'Unknown'),
-                'batting_avg': batting.get('average', 0) if batting else 0,
+                'batting_avg': batting_avg,
                 'bowling_economy': bowling.get('economy', 0) if bowling else 0,
                 'total_matches': player_data.get('total_matches', 0),
                 'star_rating': player_data.get('star_rating', 3),
